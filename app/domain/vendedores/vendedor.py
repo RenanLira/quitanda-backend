@@ -1,3 +1,4 @@
+from decimal import Decimal
 from uuid import uuid7
 from pydantic import BaseModel
 from typing import List
@@ -5,7 +6,7 @@ from typing import List
 from slugify import slugify
 
 from app.domain.vendedores.horario_funcionamento import DiaSemana, HorarioFuncionamento
-from .produto import Produto
+from .produto_vendedor import ProdutoVendedor, StatusProduto
 
 class Vendedor(BaseModel):
     id: str
@@ -14,7 +15,7 @@ class Vendedor(BaseModel):
     nome_fantasia: str
     nome_fantasia_slug: str
     descricao: str | None
-    produtos: List[Produto] = []
+    produtos: List[ProdutoVendedor] = []
     chave_pix: str
     horarios_funcionamento: List[HorarioFuncionamento] = []
     
@@ -34,6 +35,18 @@ class Vendedor(BaseModel):
             chave_pix=chave_pix,
             nome_fantasia_slug=nome_fantasia_slug
         )
+        
+    def adicionar_produto(self, produto_id: str, preco: Decimal, estoque: int) -> ProdutoVendedor:
+        produto_vendedor = ProdutoVendedor.criar(
+            vendedor_id=self.id,
+            produto_id=produto_id,
+            preco=preco,
+            estoque=estoque,
+            status=StatusProduto.DISPONIVEL
+        )
+        
+        self.produtos.append(produto_vendedor)
+        return produto_vendedor
         
     def registrar_horario_funcionamento(self, dia_semana: DiaSemana, hora_inicio: str, hora_fim: str, todo_tempo: bool = False) -> HorarioFuncionamento:
         horario = HorarioFuncionamento.criar(**{
