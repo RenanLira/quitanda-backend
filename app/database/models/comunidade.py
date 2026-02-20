@@ -3,7 +3,7 @@
 
 from decimal import Decimal
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, Numeric
 from app.database.models.produto import ProdutoModel
 from app.database.models.usuario import UsuarioModel
 from app.domain.comunidades.comunidade import TipoComunidade
@@ -37,7 +37,7 @@ class ProdutoVendedorModel(Base):
     produto_id: Mapped[str] = mapped_column(ForeignKey(ProdutoModel.id), nullable=False)
     produto: Mapped[ProdutoModel] = relationship()
     
-    preco: Mapped[Decimal] = mapped_column(nullable=False, precision=10, scale=2)
+    preco: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     estoque: Mapped[int] = mapped_column(nullable=False, default=1)
     status: Mapped[StatusProduto] = mapped_column(nullable=False, default=StatusProduto.DISPONIVEL)
     ativo: Mapped[bool] = mapped_column(nullable=False, default=True)
