@@ -1,9 +1,14 @@
 
 
+
+from decimal import Decimal
+
 from sqlalchemy import ForeignKey
+from app.database.models.produto import ProdutoModel
 from app.database.models.usuario import UsuarioModel
 from app.domain.comunidades.comunidade import TipoComunidade
 from app.domain.vendedores.horario_funcionamento import DiaSemana
+from app.domain.vendedores.produto_vendedor import StatusProduto
 from . import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
@@ -22,6 +27,23 @@ class HorarioFuncionamentoModel(Base):
     todo_tempo: Mapped[bool] = mapped_column(nullable=False, default=False)
 
 
+class ProdutoVendedorModel(Base):
+    __tablename__ = "produtos_vendedores"
+    
+    id: Mapped[str] = mapped_column(primary_key=True)
+    vendedor_id: Mapped[str] = mapped_column(ForeignKey("vendedores.id"))
+    vendedor: Mapped[VendedorModel] = relationship(back_populates="produtos_vendedores")
+    
+    produto_id: Mapped[str] = mapped_column(ForeignKey(ProdutoModel.id), nullable=False)
+    produto: Mapped[ProdutoModel] = relationship()
+    
+    preco: Mapped[Decimal] = mapped_column(nullable=False, precision=10, scale=2)
+    estoque: Mapped[int] = mapped_column(nullable=False, default=1)
+    status: Mapped[StatusProduto] = mapped_column(nullable=False, default=StatusProduto.DISPONIVEL)
+    ativo: Mapped[bool] = mapped_column(nullable=False, default=True)
+
+    
+
 class VendedorModel(Base):
     __tablename__ = "vendedores"
     
@@ -35,6 +57,8 @@ class VendedorModel(Base):
     nome_fantasia_slug: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     descricao: Mapped[str] = mapped_column(nullable=True)
     chave_pix: Mapped[str] = mapped_column(nullable=False)
+    
+    produtos: Mapped[list[ProdutoVendedorModel]] = relationship(back_populates="vendedor")
     
 
 
