@@ -1,0 +1,97 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_prod
+    restart: always  # Sempre reiniciar em produção
+    
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password  # Usar secrets
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+    
+    # NÃO expor porta externamente em produção
+    # Use network interno ou tunnel SSH
+    expose:
+      - "5432"
+    
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d:ro
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf:ro
+      - ./backups:/backups  # Diretório para backups
+    
+    command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    
+    networks:
+      - backend_network
+    
+    # Limites de recursos em produção
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '2'
+          memory: 2G
+    
+    # Usar secrets do Docker Swarm
+    secrets:
+      - postgres_password
+    
+    # Política de logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Backup automático (ESSENCIAL EM PRODUÇÃO)
+  postgres_backup:
+    image: prodrigestivill/postgres-backup-local:16-alpine
+    container_name: postgres_backup
+    restart: always
+    
+    environment:
+      POSTGRES_HOST: postgres
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      SCHEDULE: "@daily"  # Backup diário às 00:00
+      BACKUP_KEEP_DAYS: 7
+      BACKUP_KEEP_WEEKS: 4
+      BACKUP_KEEP_MONTHS: 6
+      HEALTHCHECK_PORT: 8080
+    
+    volumes:
+      - ./backups:/backups
+    
+    networks:
+      - backend_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  backend_network:
+    driver: bridge
+    internal: true  # Rede interna, sem acesso externo direto
+
+# Secrets para produção (Docker Swarm)
+secrets:
+  postgres_password:
+    external: true

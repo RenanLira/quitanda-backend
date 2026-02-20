@@ -1,0 +1,92 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    
+    # Variáveis de ambiente
+    environment:
+      # Credenciais do banco (MUDE EM PRODUÇÃO!)
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-myapp}
+      
+      # Timezone
+      TZ: America/Sao_Paulo
+      PGTZ: America/Sao_Paulo
+      
+      # Configurações de performance
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=pt_BR.UTF-8"
+    
+    # Portas expostas
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    
+    # Volumes para persistência de dados
+    volumes:
+      # Dados do PostgreSQL (CRUCIAL para não perder dados)
+      - postgres_data:/var/lib/postgresql/data
+      
+      # Configurações customizadas (opcional)
+      - ./postgresql.conf:/etc/postgresql/postgresql.conf
+    
+    # Comando para usar configuração customizada
+    # command: postgres -c config_file=/etc/postgresql/postgresql.conf
+    
+    # Health check para verificar se o banco está pronto
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-myapp}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    
+    # Rede isolada
+    networks:
+      - postgres_network
+    
+    # Limites de recursos (ajuste conforme necessário)
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 2G
+    #     reservations:
+    #       cpus: '1'
+    #       memory: 512M
+
+  # PgAdmin para gerenciamento visual (OPCIONAL - remover em produção)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    restart: unless-stopped
+    
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@admin.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    
+    ports:
+      - "${PGADMIN_PORT:-5050}:80"
+    
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    
+    networks:
+      - postgres_network
+    
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+# Volumes nomeados para persistência
+volumes:
+  postgres_data:
+    driver: local
+  pgadmin_data:
+    driver: local
+
+# Rede isolada
+networks:
+  postgres_network:
+    driver: bridge
