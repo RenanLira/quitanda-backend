@@ -22,3 +22,9 @@ class CredenciaisInvalidasError(DomainError):
         self.message = message
         self.code = code
         super().__init__(self.message, self.code)
+        
+class UsuarioSemPermissaoError(DomainError):
+    def __init__(self, message="Usuário não tem permissão para acessar este recurso", code=403):
+        self.message = message
+        self.code = code
+        super().__init__(self.message, self.code)

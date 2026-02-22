@@ -6,9 +6,10 @@ from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel, Field
 
 from app.dependencies import get_current_user, get_usuario_repository
+from app.domain.auth.decorators.authorization import require_roles
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
-from app.domain.usuarios.usuario import Usuario
+from app.domain.usuarios.usuario import ETipoUsuario, Usuario
 
 
 
@@ -31,6 +32,19 @@ class UsuariosRouter(APIRouter):
         ):
             return current_user.model_dump(exclude={"password_hash"})
         
+        @self.get("/{usuario_id}")
+        @require_roles([ETipoUsuario.ADMIN])
+        async def obter_usuario_por_id(
+            usuario_id: str,
+            usuario_repository: Annotated[UsuarioRepository, Depends(get_usuario_repository)]
+        ):
+            usuario = await usuario_repository.find_by_id(usuario_id)
+            
+            if not usuario:
+                return {"message": "Usuário não encontrado"}, 404
+            
+            return usuario.model_dump(exclude={"password_hash"})
+        
         
         @self.post("/")
         async def criar_usuario(
@@ -40,7 +54,5 @@ class UsuariosRouter(APIRouter):
             usuario = Usuario.criar(body)
             
             await usuario_repository.save(usuario)
-            
-            
             
             return usuario.model_dump(exclude={"password_hash"})
