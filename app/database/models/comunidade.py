@@ -32,7 +32,7 @@ class ProdutoVendedorModel(Base):
     
     id: Mapped[str] = mapped_column(primary_key=True)
     vendedor_id: Mapped[str] = mapped_column(ForeignKey("vendedores.id"))
-    vendedor: Mapped[VendedorModel] = relationship(back_populates="produtos_vendedores")
+    vendedor: Mapped[VendedorModel] = relationship(back_populates="produtos")
     
     produto_id: Mapped[str] = mapped_column(ForeignKey(ProdutoModel.id), nullable=False)
     produto: Mapped[ProdutoModel] = relationship()
