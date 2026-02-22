@@ -29,8 +29,6 @@ class AuthRouter(APIRouter):
             auth_service: Annotated[AuthService, Depends(get_auth_service)]
         ):
             
-            
-            
             result = await auth_service.signup(body)
             response.set_cookie(key="refresh_token", value=result.refresh_token, httponly=True, secure=True)
             

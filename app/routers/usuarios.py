@@ -5,10 +5,11 @@ from typing import Annotated
 from fastapi import APIRouter, Body, Depends
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_current_user, get_usuario_repository
+from app.dependencies import get_current_user, get_usuario_repository, get_usuario_service
 from app.domain.auth.decorators.authorization import require_roles
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
+from app.domain.usuarios.services.usuario_service import UsuarioService
 from app.domain.usuarios.usuario import ETipoUsuario, Usuario
 
 
@@ -21,10 +22,6 @@ class UsuariosRouter(APIRouter):
         self.registrar_rotas()
     
     def registrar_rotas(self):
-        
-        @self.get("/")
-        def listar_usuarios():
-            return {"message": "Listar usuários"}
         
         @self.get("/me")
         async def obter_usuario_atual(
@@ -47,12 +44,12 @@ class UsuariosRouter(APIRouter):
         
         
         @self.post("/")
+        @require_roles([ETipoUsuario.ADMIN])
         async def criar_usuario(
             body: Annotated[CriarUsuarioDTO, Body()],
-            usuario_repository: Annotated[UsuarioRepository, Depends(get_usuario_repository)]
+            usuario_service: Annotated[UsuarioService, Depends(get_usuario_service)]
         ):
-            usuario = Usuario.criar(body)
             
-            await usuario_repository.save(usuario)
+            usuario = await usuario_service.criar_usuario(body)
             
             return usuario.model_dump(exclude={"password_hash"})
