@@ -4,7 +4,7 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from app.domain.auth.auth_service import TokenType
+from app.domain.auth.enums.token_type import TokenType
 
 
 class TokenRepository(ABC):

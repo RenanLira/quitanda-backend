@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models.usuario import TokenModel
-from app.domain.auth.auth_service import TokenType
+from app.domain.auth.enums.token_type import TokenType
 from app.domain.auth.interfaces.token_repository import TokenRepository
 
 class TokenRepositoryImpl(TokenRepository):

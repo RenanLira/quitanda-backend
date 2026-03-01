@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy import ForeignKey
 
-from app.domain.auth.auth_service import TokenType
+from app.domain.auth.enums.token_type import TokenType
 
 from . import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship

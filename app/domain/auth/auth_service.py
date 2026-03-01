@@ -7,21 +7,16 @@ from weakref import ref
 
 import bcrypt
 from fastapi.exceptions import RequestValidationError
-from fastapi.security import OAuth2PasswordBearer
 import jwt
 from app.domain.auth.auth_errors import CredenciaisInvalidasError, InvalidTokenError
 from app.domain.auth.dto.token import TokenResponse
+from app.domain.auth.enums.token_type import TokenType
 from app.domain.auth.interfaces.token_repository import TokenRepository
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
 from app.domain.usuarios.usuario import Usuario
 from app.settings import Settings
 
-
-
-class TokenType(str, Enum):
-    ACCESS = "access"
-    REFRESH = "refresh"
 
 class AuthService:
     
