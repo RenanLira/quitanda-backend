@@ -1,6 +1,7 @@
 
 
 from datetime import datetime, timedelta, timezone
+from enum import Enum
 from typing import Any
 from weakref import ref
 
@@ -10,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 import jwt
 from app.domain.auth.auth_errors import CredenciaisInvalidasError, InvalidTokenError
 from app.domain.auth.dto.token import TokenResponse
+from app.domain.auth.interfaces.token_repository import TokenRepository
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
 from app.domain.usuarios.usuario import Usuario
@@ -17,12 +19,16 @@ from app.settings import Settings
 
 
 
+class TokenType(str, Enum):
+    ACCESS = "access"
+    REFRESH = "refresh"
 
 class AuthService:
     
-    def __init__(self, settings: Settings, usuario_repository: UsuarioRepository):
+    def __init__(self, settings: Settings, usuario_repository: UsuarioRepository, token_repository: TokenRepository):
         self.settings = settings
         self.usuario_repository = usuario_repository
+        self.token_repository = token_repository
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
@@ -48,8 +54,8 @@ class AuthService:
         
         await self.usuario_repository.save(usuario)
         
-        access_token = self._create_access_token(usuario)
-        refresh_token = self._create_refresh_token(usuario)
+        access_token = await self._create_access_token(usuario)
+        refresh_token = await self._create_refresh_token(usuario)
         
         return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
     
@@ -62,8 +68,8 @@ class AuthService:
         if not self.verify_password(password, usuario.password_hash):
             raise CredenciaisInvalidasError()
         
-        access_token = self._create_access_token(usuario)
-        refresh_token = self._create_refresh_token(usuario)
+        access_token = await self._create_access_token(usuario)
+        refresh_token = await self._create_refresh_token(usuario)
         
         return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
     
@@ -74,19 +80,24 @@ class AuthService:
             if user_id is None:
                 raise InvalidTokenError()
             
+            if not await self.token_repository.exists(refresh_token, user_id, TokenType.REFRESH):
+                raise InvalidTokenError()
+            
             user = await self.usuario_repository.find_by_id(user_id)
             if not user:
                 raise InvalidTokenError()
             
-            new_access_token = self._create_access_token(user)
-            new_refresh_token = self._create_refresh_token(user)
+            new_access_token = await self._create_access_token(user)
+            new_refresh_token = await self._create_refresh_token(user)
+            
+            await self.token_repository.delete_token(refresh_token)
             
             return TokenResponse(access_token=new_access_token, refresh_token=new_refresh_token, token_type="bearer")
         
         except jwt.PyJWTError:
             raise InvalidTokenError()
     
-    def _create_access_token(self, usuario: Usuario, expires_delta: timedelta | None = None) -> str:
+    async def _create_access_token(self, usuario: Usuario, expires_delta: timedelta | None = None) -> str:
         data = usuario.model_dump(mode='json',exclude={"password_hash"})
         data["sub"] = usuario.id
         
@@ -99,9 +110,11 @@ class AuthService:
         
         encoded_jwt = jwt.encode(data, self.settings.access_token_secret_key, algorithm=self.settings.algorithm)
         
+        await self.token_repository.create_token(user_id=usuario.id, token=encoded_jwt, expires_at=expire, type=TokenType.ACCESS)
+        
         return encoded_jwt
     
-    def _create_refresh_token(self, usuario: Usuario, expires_delta: timedelta | None = None) -> str:
+    async def _create_refresh_token(self, usuario: Usuario, expires_delta: timedelta | None = None) -> str:
         data: dict[str, Any] = {"sub": usuario.id}
         
         if expires_delta:
@@ -112,6 +125,8 @@ class AuthService:
         data["exp"] = expire
         
         encoded_jwt = jwt.encode(data, self.settings.refresh_token_secret_key, algorithm=self.settings.algorithm)
+        
+        await self.token_repository.create_token(user_id=usuario.id, token=encoded_jwt, expires_at=expire, type=TokenType.REFRESH)
         
         return encoded_jwt
     
