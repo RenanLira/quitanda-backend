@@ -1,8 +1,8 @@
 
 
-from datetime import datetime
+from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models.usuario import TokenModel
@@ -19,7 +19,7 @@ class TokenRepositoryImpl(TokenRepository):
         token_model = TokenModel(
             id=token,
             user_id=user_id,
-            expires_at=expires_at,
+            expires_at=expires_at.replace(tzinfo=None),
             token_type=type
         )
         self.session.add(token_model)
@@ -40,6 +40,10 @@ class TokenRepositoryImpl(TokenRepository):
         
     async def delete_token(self, token: str):
         
-        await self.session.delete(TokenModel(id=token))
+        await self.session.execute(
+            delete(TokenModel).where(TokenModel.id == token)
+        )
+
+        await self.session.commit()
         
         
