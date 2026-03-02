@@ -3,10 +3,10 @@
 from typing import Annotated
 import bcrypt
 from fastapi import APIRouter, Body, Cookie, Depends, Response
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
 
-from app.dependencies import get_auth_service
+from app.dependencies import get_auth_service, get_current_user
 from app.domain.auth.auth_errors import InvalidTokenError, TokenNotFoundError
 from app.domain.auth.auth_service import AuthService
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
@@ -62,6 +62,17 @@ class AuthRouter(APIRouter):
             return {"access_token": res.access_token, "token_type": res.token_type}
         
         @self.delete("/logout")
-        async def logout(response: Response):
+        async def logout(
+            response: Response,
+            cookies: Annotated[Cookies, Cookie()],
+            token: Annotated[str, Depends(OAuth2PasswordBearer(tokenUrl="/auth/signin", refreshUrl="/auth/refresh"))],
+            auth_service: Annotated[AuthService, Depends(get_auth_service)]
+        ):
+            refresh_token = cookies.refresh_token
+            if not refresh_token:
+                raise TokenNotFoundError()
+
+            await auth_service.logout(refresh_token=refresh_token, access_token=token)
             response.delete_cookie(key="refresh_token")
+
             return {"message": "Logout bem-sucedido"}

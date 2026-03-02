@@ -68,6 +68,10 @@ class AuthService:
         
         return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
     
+    async def logout(self, refresh_token: str, access_token: str):
+        await self.token_repository.delete_token(refresh_token)
+        await self.token_repository.delete_token(access_token)
+    
     async def refresh_access_token(self, refresh_token: str) -> TokenResponse:
         try:
             payload = jwt.decode(refresh_token, self.settings.refresh_token_secret_key, algorithms=[self.settings.algorithm])
@@ -130,6 +134,10 @@ class AuthService:
             payload = jwt.decode(token, self.settings.access_token_secret_key, algorithms=[self.settings.algorithm])
             user_id: str | None = payload.get("sub")
             if user_id is None:
+                raise InvalidTokenError()
+            
+            token_exists = await self.token_repository.exists(token, user_id, TokenType.ACCESS)
+            if not token_exists:
                 raise InvalidTokenError()
             
             user = await self.usuario_repository.find_by_id(user_id)

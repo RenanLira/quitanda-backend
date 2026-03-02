@@ -22,7 +22,7 @@ def require_roles(allowed_roles: list[ETipoUsuario]):
             if not current_user:
                 raise UsuarioSemPermissaoError("Usuário não autenticado")
             
-            if current_user.tipo_usuario not in allowed_roles:
+            if current_user.tipo_usuario() not in allowed_roles:
                 raise UsuarioSemPermissaoError("Usuário não tem permissão para acessar este recurso")
 
             
