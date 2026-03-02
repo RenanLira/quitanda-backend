@@ -1,32 +1,43 @@
 
 
+from app.domain.comunidades.comunidade_errors import ComunidadeNotFoundError
+from app.domain.comunidades.comunidade_service import ComunidadeService
+from app.domain.error import DomainError
+from app.domain.usuarios.services.usuario_service import UsuarioService
+from app.domain.usuarios.usuario import ETipoUsuario
+from app.domain.vendedores.dto.vendedores_dto import CriarVendedorDTO
+from app.domain.vendedores.interfaces.vendedor_repository import VendedorRepository
+from app.domain.vendedores.vendedor import Vendedor
+
+
 class VendedorService():
-    def __init__(self, repository):
+    def __init__(self, 
+        repository: VendedorRepository,
+        comunidade_service: ComunidadeService,
+        usuario_service: UsuarioService
+    ) -> None:
         self.repository = repository
+        self.comunidade_service = comunidade_service
+        self.usuario_service = usuario_service
 
-    def criar_vendedor(self, nome, email):
-        # Lógica para criar um novo vendedor
-        vendedor = {
-            'nome': nome,
-            'email': email
-        }
-        return self.repository.save(vendedor)
+    async def criar_vendedor(self, vendedorDTO: CriarVendedorDTO) -> None:
+        
+        comunidade = await self.comunidade_service.get_comunidade_por_id(vendedorDTO['comunidade_id'])
+        usuario = await self.usuario_service.get_usuario_por_id(vendedorDTO['usuario_id'])
 
-    def obter_vendedor(self, vendedor_id):
-        # Lógica para obter um vendedor pelo ID
-        return self.repository.get_by_id(vendedor_id)
+        if usuario.tipo_usuario != ETipoUsuario.CLIENTE:
+            raise DomainError("O usuário deve ser do tipo CLIENTE para se tornar um vendedor")
 
-    def atualizar_vendedor(self, vendedor_id, nome=None, email=None):
-        # Lógica para atualizar as informações de um vendedor
-        vendedor = self.repository.get_by_id(vendedor_id)
-        if not vendedor:
-            return None
-        if nome:
-            vendedor['nome'] = nome
-        if email:
-            vendedor['email'] = email
-        return self.repository.update(vendedor_id, vendedor)
+        vendedor = Vendedor.criar(
+            usuario=usuario,
+            comunidade=comunidade,
+            nome_fantasia=vendedorDTO['nome_fantasia'],
+            descricao=vendedorDTO.get('descricao'),
+            chave_pix=vendedorDTO['chave_pix']
+        )
 
-    def deletar_vendedor(self, vendedor_id):
-        # Lógica para deletar um vendedor
-        return self.repository.delete(vendedor_id)
+        await self.repository.save(vendedor)
+
+
+    async def get_vendedores_por_comunidade(self, comunidade_id: str) -> list[Vendedor]:
+        return await self.repository.get_vendedores_por_comunidade(comunidade_id)

@@ -5,13 +5,16 @@ from typing import List
 
 from slugify import slugify
 
+from app.domain.comunidades.comunidade import Comunidade
+from app.domain.produtos.produto import Produto
+from app.domain.usuarios.usuario import Usuario
 from app.domain.vendedores.horario_funcionamento import DiaSemana, HorarioFuncionamento
 from .produto_vendedor import ProdutoVendedor, StatusProduto
 
 class Vendedor(BaseModel):
     id: str
-    usuario_id: str
-    comunidade_id: str | None
+    usuario: Usuario
+    comunidade: Comunidade
     nome_fantasia: str
     nome_fantasia_slug: str
     descricao: str | None
@@ -21,25 +24,25 @@ class Vendedor(BaseModel):
     
     
     @classmethod
-    def criar(cls, usuario_id: str, comunidade_id: str | None, nome_fantasia: str, descricao: str | None, chave_pix: str) -> Vendedor:
+    def criar(cls, usuario: Usuario, comunidade: Comunidade, nome_fantasia: str, descricao: str | None, chave_pix: str) -> Vendedor:
         
         id = str(uuid7())
         nome_fantasia_slug = slugify(nome_fantasia)
         
         return cls(
             id=id,
-            usuario_id=usuario_id,
-            comunidade_id=comunidade_id,
+            usuario=usuario,
+            comunidade=comunidade,
             nome_fantasia=nome_fantasia,
             descricao=descricao,
             chave_pix=chave_pix,
             nome_fantasia_slug=nome_fantasia_slug
         )
         
-    def adicionar_produto(self, produto_id: str, preco: Decimal, estoque: int) -> ProdutoVendedor:
+    def adicionar_produto(self, produto: Produto, preco: Decimal, estoque: int) -> ProdutoVendedor:
         produto_vendedor = ProdutoVendedor.criar(
             vendedor_id=self.id,
-            produto_id=produto_id,
+            produto_id=produto.id,
             preco=preco,
             estoque=estoque,
             status=StatusProduto.DISPONIVEL
