@@ -6,7 +6,7 @@ from decimal import Decimal
 from sqlalchemy import ForeignKey, Numeric
 from app.database.models.produto import ProdutoModel
 from app.database.models.usuario import UsuarioModel
-from app.domain.comunidades.comunidade import TipoComunidade
+from app.domain.comunidades.types.tipo_comunidade import TipoComunidade
 from app.domain.vendedores.horario_funcionamento import DiaSemana
 from app.domain.vendedores.produto_vendedor import StatusProduto
 from . import Base

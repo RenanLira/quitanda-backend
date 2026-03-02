@@ -3,17 +3,14 @@
 
 from enum import Enum
 from typing import List
+from uuid import uuid7
 from pydantic import BaseModel, Field
 from slugify import slugify
 
-from app.domain.vendedores.vendedor import Vendedor
+from app.domain.comunidades.dto.criar_comunidade_dto import CriarComunidadeDTO
+from app.domain.comunidades.types.tipo_comunidade import TipoComunidade
 
-class TipoComunidade(str, Enum):
-    FEIRA = "feira"
-    MERCADO = "mercado"
-    BAIRRO = "bairro"
-    CONDOMINIO = "condominio"
-    OUTRO = "outro"
+
 
 class Comunidade(BaseModel):
     id: str
@@ -25,20 +22,21 @@ class Comunidade(BaseModel):
     tipo: TipoComunidade
     imagem_url: str | None
     ativo: bool = Field(default=False)
-    produtores: List[Vendedor] = []
     
     @classmethod
-    def criar(cls, id: str, nome: str, descricao_curta: str, tipo: TipoComunidade, descricao_longa: str | None = None, cor_tema: str = "#059669", imagem_url: str | None = None) -> Comunidade:
-        nome_slug = slugify(nome)
+    def criar(cls, criar_comunidade_dto: CriarComunidadeDTO) -> Comunidade:
+        
+        id = str(uuid7())
+        nome_slug = slugify(criar_comunidade_dto["nome"])
         
         return cls(
             id=id,
-            nome=nome,
+            nome=criar_comunidade_dto["nome"],
             nome_slug=nome_slug,
-            descricao_curta=descricao_curta,
-            descricao_longa=descricao_longa,
-            tipo=tipo,
-            cor_tema=cor_tema,
-            imagem_url=imagem_url
+            descricao_curta=criar_comunidade_dto["descricao_curta"],
+            descricao_longa=criar_comunidade_dto["descricao_longa"],
+            tipo=criar_comunidade_dto["tipo"],
+            cor_tema=criar_comunidade_dto["cor_tema"],
+            imagem_url=criar_comunidade_dto["imagem_url"]
         )
     
