@@ -1,4 +1,5 @@
 from app.database.repositories.produto import get_produto_repository
+from app.domain.error import NotFoundError
 
 
 async def produto_existe(produto_id: str) -> str:
@@ -7,6 +8,6 @@ async def produto_existe(produto_id: str) -> str:
     produto = await repository.find_by_id(produto_id)
 
     if not produto:
-        raise ValueError(f"Produto com id {produto_id} não existe")
+        raise NotFoundError(f"Produto com id {produto_id} não encontrado.")
     
     return produto_id
