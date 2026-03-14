@@ -6,3 +6,4 @@ Base = declarative_base()
 from .usuario import UsuarioModel
 from .comunidade import VendedorModel, HorarioFuncionamentoModel, ComunidadeModel, ProdutoVendedorModel
 from .produto import ProdutoModel
+from .endereco import EnderecoModel
