@@ -5,6 +5,7 @@ from app.domain.comunidades.comunidade_service import ComunidadeService
 from app.domain.error import DomainError
 from app.domain.usuarios.services.usuario_service import UsuarioService
 from app.domain.usuarios.usuario import ETipoUsuario
+from app.domain.vendedores.dto.produto_vendedor_dto import CriarProdutoVendedorDTO
 from app.domain.vendedores.dto.vendedores_dto import CriarVendedorDTO
 from app.domain.vendedores.interfaces.vendedor_repository import VendedorRepository
 from app.domain.vendedores.vendedor import Vendedor
@@ -38,6 +39,17 @@ class VendedorService():
 
         await self.repository.save(vendedor)
 
+    async def cadastrar_produto_vendedor(self, vendedor_id: str, produto_vendedor_dto: CriarProdutoVendedorDTO):
+        ...
+        # vendedor = await self.repository.find_by_id(vendedor_id)
+
+        # if not vendedor:
+        #     raise DomainError("Vendedor não encontrado")
+        
+
+        # await self.repository.save(vendedor)
+
+        # return produto_vendedor
 
     async def get_vendedores_por_comunidade(self, comunidade_id: str) -> list[Vendedor]:
         return await self.repository.get_vendedores_por_comunidade(comunidade_id)

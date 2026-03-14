@@ -1,6 +1,7 @@
 
 from sqlalchemy import select
 
+from app.database import get_db_session
 from app.database.models.produto import ProdutoModel
 from app.domain.produtos.interfaces.produto_repository import ProdutoRepository
 
@@ -38,4 +39,19 @@ class ProdutoRepositoryImpl(ProdutoRepository):
             return None
         
         return Produto.model_validate(produto_model, from_attributes=True)
+    
+    async def delete(self, id: str) -> None:
+        produto = await self.find_by_id(id)
         
+        if not produto:
+            return
+        
+        await self.session.delete(produto)
+        await self.session.commit()
+        
+
+async def get_produto_repository(session: AsyncSession | None = None) -> ProdutoRepository:
+    if session is None:
+        session = await get_db_session().__anext__()
+
+    return ProdutoRepositoryImpl(session)

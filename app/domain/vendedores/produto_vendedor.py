@@ -1,28 +1,24 @@
+from typing import Annotated
 from uuid import uuid7
 
-from pydantic import BaseModel
+from pydantic import AfterValidator, BaseModel
 from enum import Enum
 from decimal import Decimal
+
+from app.domain.vendedores.validators import produto_existe
+
+
 
 class StatusProduto(Enum):
     DISPONIVEL = "disponivel"
     INDISPONIVEL = "indisponivel"
     ESGOTADO = "esgotado"
 
-class ETipoUnidade(Enum):
-    KG = "kg"
-    UNIDADE = "unidade"
-    LITRO = "litro"
-    PACOTE = "pacote"
-    CAIXA = "caixa"
-    MACO = "maco"
-    FARDO = "fardo"
-    BANDEJA = "bandeja"
 
 class ProdutoVendedor(BaseModel):
     id: str
     vendedor_id: str
-    produto_id: str
+    produto_id: Annotated[str, AfterValidator(produto_existe)]
     preco: Decimal
     estoque: int
     status: StatusProduto
