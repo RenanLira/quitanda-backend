@@ -15,7 +15,7 @@ class ProdutoRepositoryImpl(ProdutoRepository):
         
         
     async def save(self, produto: Produto) -> None:
-        self.session.add(produto)
+        self.session.add(ProdutoModel(**produto.model_dump()))
         await self.session.commit()
         
         
@@ -41,12 +41,13 @@ class ProdutoRepositoryImpl(ProdutoRepository):
         return Produto.model_validate(produto_model, from_attributes=True)
     
     async def delete(self, id: str) -> None:
-        produto = await self.find_by_id(id)
-        
-        if not produto:
+        result = await self.session.execute(select(ProdutoModel).where(ProdutoModel.id == id))
+        produto_model = result.scalars().first()
+
+        if not produto_model:
             return
         
-        await self.session.delete(produto)
+        await self.session.delete(produto_model)
         await self.session.commit()
         
 

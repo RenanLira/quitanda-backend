@@ -1,5 +1,6 @@
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey
 
@@ -9,6 +10,9 @@ from . import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.domain.usuarios.usuario import ETipoUsuario
+
+if TYPE_CHECKING:
+    from app.database.models.endereco import EnderecoModel
 
 class UsuarioModel(Base):
     __tablename__ = "usuarios"
@@ -22,6 +26,7 @@ class UsuarioModel(Base):
     ativo: Mapped[bool] = mapped_column(nullable=False, default=True)
     
     tokens: Mapped[list["TokenModel"]] = relationship(back_populates="usuario")
+    endereco: Mapped["EnderecoModel"] = relationship(back_populates="usuario", uselist=False)
 
 class TokenModel(Base):
     __tablename__ = "tokens"

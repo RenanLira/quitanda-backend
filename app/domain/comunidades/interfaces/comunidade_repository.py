@@ -13,8 +13,5 @@ class ComunidadeRepository(ABC):
     @abstractmethod
     async def find_by_id(self, comunidade_id: str) -> Comunidade | None: ...
 
-    @abstractmethod
-    async def find_by_slug(self, slug: str) -> Comunidade | None: ...
-
 
     

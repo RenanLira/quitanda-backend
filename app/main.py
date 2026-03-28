@@ -5,6 +5,9 @@ from fastapi.responses import JSONResponse
 
 from app.domain.error import DomainError
 from app.routers.auth import AuthRouter
+from app.routers.comunidades import ComunidadesRouter
+from app.routers.pedidos import PedidosRouter
+from app.routers.produtos import ProdutosRouter
 from app.routers.usuarios import UsuariosRouter
 from app.routers.vendedores import VendedoresRouter
 from app.database import sessionmanager
@@ -20,6 +23,9 @@ app = FastAPI(lifespan=lifespan)
 
 app.include_router(VendedoresRouter())
 app.include_router(UsuariosRouter())
+app.include_router(ComunidadesRouter())
+app.include_router(ProdutosRouter())
+app.include_router(PedidosRouter())
 app.include_router(AuthRouter())
 
 @app.exception_handler(DomainError)

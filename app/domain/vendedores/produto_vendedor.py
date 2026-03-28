@@ -1,11 +1,8 @@
-from typing import Annotated
-from uuid import uuid7
-
-from pydantic import AfterValidator, BaseModel
+from pydantic import BaseModel
 from enum import Enum
 from decimal import Decimal
 
-from app.domain.vendedores.validators import produto_existe
+from app.domain.produtos.produto import Produto
 
 
 
@@ -18,22 +15,12 @@ class StatusProduto(Enum):
 class ProdutoVendedor(BaseModel):
     id: str
     vendedor_id: str
-    produto_id: Annotated[str, AfterValidator(produto_existe)]
+    produto_id: str
+    produto: Produto | None = None
     preco: Decimal
     estoque: int
     status: StatusProduto
     
-    @classmethod
-    def criar(cls,vendedor_id: str, produto_id: str, preco: Decimal, estoque: int, status: StatusProduto) -> ProdutoVendedor:
-        return cls(
-            id=str(uuid7()),
-            vendedor_id=vendedor_id,
-            produto_id=produto_id,
-            status=status,
-            preco=preco,
-            estoque=estoque,
-        )
-        
     
     def disponibilizar(self) -> None:
         self.status = StatusProduto.DISPONIVEL
@@ -43,5 +30,17 @@ class ProdutoVendedor(BaseModel):
 
     def indisponibilizar(self) -> None:
         self.status = StatusProduto.INDISPONIVEL
+
+
+class ProdutoVendedorComProdutoInfo(BaseModel):
+    produto_vendedor_id: str
+    vendedor_id: str
+    produto_id: str
+    produto_nome: str
+    produto_descricao: str
+    tipo_unidade: str
+    preco: Decimal
+    estoque: int
+    status: str
     
     

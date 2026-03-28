@@ -2,7 +2,6 @@
 
 
 from enum import Enum
-from uuid import uuid7
 
 from pydantic import BaseModel
 
@@ -22,15 +21,3 @@ class Produto(BaseModel):
     nome: str
     descricao: str
     tipo_unidade: TipoUnidade
-    
-    @classmethod
-    def criar(cls, nome: str, descricao: str, tipo_unidade: TipoUnidade) -> "Produto":
-        
-        uuid = str(uuid7())    
-        
-        return cls(
-            id=uuid,
-            nome=nome,
-            descricao=descricao,
-            tipo_unidade=tipo_unidade
-        )

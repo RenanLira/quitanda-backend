@@ -1,12 +1,9 @@
 
 
 from datetime import datetime, timedelta, timezone
-from enum import Enum
 from typing import Any
-from weakref import ref
 
 import bcrypt
-from fastapi.exceptions import RequestValidationError
 import jwt
 from app.domain.auth.auth_errors import CredenciaisInvalidasError, InvalidTokenError
 from app.domain.auth.dto.token import TokenResponse
@@ -14,40 +11,30 @@ from app.domain.auth.enums.token_type import TokenType
 from app.domain.auth.interfaces.token_repository import TokenRepository
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
+from app.domain.usuarios.services.usuario_service import UsuarioService
 from app.domain.usuarios.usuario import Usuario
 from app.settings import Settings
 
 
 class AuthService:
     
-    def __init__(self, settings: Settings, usuario_repository: UsuarioRepository, token_repository: TokenRepository):
+    def __init__(
+        self,
+        settings: Settings,
+        usuario_repository: UsuarioRepository,
+        usuario_service: UsuarioService,
+        token_repository: TokenRepository,
+    ):
         self.settings = settings
         self.usuario_repository = usuario_repository
+        self.usuario_service = usuario_service
         self.token_repository = token_repository
     
     def verify_password(self, plain_password: str, hashed_password: str) -> bool:
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
         
     async def signup(self, dto: CriarUsuarioDTO) -> TokenResponse:
-        existing_user = await self.usuario_repository.usuario_existe(dto.get("email"), dto["telefone"])
-        
-        if existing_user.telefone_exists:
-            raise RequestValidationError(errors=[{
-                "loc": ["body", "telefone"],
-                "msg": "Telefone já cadastrado",
-                "type": "value_error"
-            }])
-            
-        elif existing_user.email_exists:
-            raise RequestValidationError(errors=[{
-                "loc": ["body", "email"],
-                "msg": "Email já cadastrado",
-                "type": "value_error"
-            }])
-            
-        usuario = Usuario.criar(dto)
-        
-        await self.usuario_repository.save(usuario)
+        usuario = await self.usuario_service.criar_usuario(dto)
         
         access_token = await self._create_access_token(usuario)
         refresh_token = await self._create_refresh_token(usuario)

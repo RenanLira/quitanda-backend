@@ -6,6 +6,7 @@ from typing import Annotated, TypedDict
 from pydantic import Field
 
 from app.domain.comunidades.types.tipo_comunidade import TipoComunidade
+from app.domain.enderecos.dto.criar_endereco_dto import CriarEnderecoDTO
 
 
 
@@ -17,3 +18,4 @@ class CriarComunidadeDTO(TypedDict):
     tipo: Annotated[TipoComunidade, Field(..., description="Tipo da comunidade, deve ser um dos: feira, mercado, bairro, condominio, outro")]
     cor_tema: Annotated[str, Field("#059669", description="Cor tema da comunidade, em formato hexadecimal, ex: #059669")]
     imagem_url: Annotated[str | None, Field(None, description="URL da imagem da comunidade, usada na página da comunidade")]
+    endereco: Annotated[CriarEnderecoDTO, Field(..., description="Endereço da comunidade")]

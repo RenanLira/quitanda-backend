@@ -1,6 +1,7 @@
 
 
 from sqlalchemy import select
+from app.database import get_db_session
 from app.database.models.usuario import UsuarioModel
 from app.domain.usuarios.interfaces.usurario_repository import EmailOrTelefoneAlreadyExistsResponse, UsuarioRepository
 from app.domain.usuarios.usuario import Usuario
@@ -49,3 +50,9 @@ class UsuarioRepositoryImpl(UsuarioRepository):
             email_exists=bool(result and result.email == email),
             telefone_exists=bool(result and result.telefone == telefone)
         )
+    
+async def get_usuario_repository(session: AsyncSession | None = None) -> UsuarioRepository:
+    if session is None:
+        session = await get_db_session().__anext__()
+
+    return UsuarioRepositoryImpl(session)

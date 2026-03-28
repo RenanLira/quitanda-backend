@@ -5,12 +5,21 @@ from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from app.database import get_db_session
 from app.database.repositories.comunidade import ComunidadeRepositoryImpl
+from app.database.repositories.endereco import EnderecoRepositoryImpl
+from app.database.repositories.pedido import PedidoRepositoryImpl
 from app.database.repositories.token import TokenRepositoryImpl
+from app.database.repositories.produto import ProdutoRepositoryImpl
 from app.database.repositories.usuario import UsuarioRepositoryImpl
 from app.database.repositories.vendedor import VendedorRepositoryImpl
+from app.domain.produtos.produto_service import ProdutoService
+from app.domain.produtos.interfaces.produto_repository import ProdutoRepository
+from app.domain.pedidos.interfaces.pedido_repository import PedidoRepository
+from app.domain.pedidos.pedido_service import PedidoService
 from app.domain.auth.auth_service import AuthService
 from app.domain.comunidades.comunidade_service import ComunidadeService
 from app.domain.comunidades.interfaces.comunidade_repository import ComunidadeRepository
+from app.domain.enderecos.endereco_service import EnderecoService
+from app.domain.enderecos.interfaces.endereco_repository import EnderecoRepository
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
 from app.domain.usuarios.services.usuario_service import UsuarioService
 from app.domain.vendedores.interfaces.vendedor_repository import VendedorRepository
@@ -32,30 +41,77 @@ def get_usuario_service(
 ):
     return UsuarioService(usuario_repository=usuario_repository)
 
+def get_produto_repository(session: Annotated[AsyncSession, Depends(get_db_session)]):
+    return ProdutoRepositoryImpl(session=session)
+
+def get_produto_service(
+    produto_repository: Annotated[ProdutoRepository, Depends(get_produto_repository)],
+):
+    return ProdutoService(produto_repository=produto_repository)
+
 def get_auth_service(
     settings: Annotated[Settings, Depends(get_settings)],
     usuario_repository: Annotated[UsuarioRepository, Depends(get_usuario_repository)],
+    usuario_service: Annotated[UsuarioService, Depends(get_usuario_service)],
     token_repository: Annotated[TokenRepositoryImpl, Depends(get_token_repository)]
 ):
-    return AuthService(settings=settings, usuario_repository=usuario_repository, token_repository=token_repository)
+    return AuthService(
+        settings=settings,
+        usuario_repository=usuario_repository,
+        usuario_service=usuario_service,
+        token_repository=token_repository,
+    )
+
+async def get_endereco_repository(session: Annotated[AsyncSession, Depends(get_db_session)]):
+    return EnderecoRepositoryImpl(session=session)
+
+async def get_endereco_service(
+    repository: Annotated[EnderecoRepository, Depends(get_endereco_repository)],
+):
+    return EnderecoService(repository=repository)
 
 async def get_comunidade_repository(session: Annotated[AsyncSession, Depends(get_db_session)]):
     return ComunidadeRepositoryImpl(session=session)
 
 async def get_comunidade_service(
         repository: Annotated[ComunidadeRepository, Depends(get_comunidade_repository)],
+        endereco_service: Annotated[EnderecoService, Depends(get_endereco_service)],
 ):
-    return ComunidadeService(repository=repository)
+    return ComunidadeService(repository=repository, endereco_service=endereco_service)
 
 async def get_vendedor_repository(session: Annotated[AsyncSession, Depends(get_db_session)]):
     return VendedorRepositoryImpl(session=session)
 
 async def get_vendedor_service(
-        repository: Annotated[VendedorRepository, Depends(get_vendedor_repository)],
-        comunidade_service: Annotated[ComunidadeService, Depends(get_comunidade_service)],
-        usuario_service: Annotated[UsuarioService, Depends(get_usuario_service)]
+    repository: Annotated[VendedorRepository, Depends(get_vendedor_repository)],
+    comunidade_service: Annotated[ComunidadeService, Depends(get_comunidade_service)],
+    usuario_service: Annotated[UsuarioService, Depends(get_usuario_service)],
+    endereco_service: Annotated[EnderecoService, Depends(get_endereco_service)],
+    produto_service: Annotated[ProdutoService, Depends(get_produto_service)],
 ):
-    return VendedorService(repository=repository, comunidade_service=comunidade_service, usuario_service=usuario_service)
+    return VendedorService(
+        repository=repository,
+        comunidade_service=comunidade_service,
+        usuario_service=usuario_service,
+        endereco_service=endereco_service,
+        produto_service=produto_service,
+    )
+
+
+async def get_pedido_repository(session: Annotated[AsyncSession, Depends(get_db_session)]):
+    return PedidoRepositoryImpl(session=session)
+
+
+async def get_pedido_service(
+    repository: Annotated[PedidoRepository, Depends(get_pedido_repository)],
+    usuario_service: Annotated[UsuarioService, Depends(get_usuario_service)],
+    vendedor_repository: Annotated[VendedorRepository, Depends(get_vendedor_repository)],
+):
+    return PedidoService(
+        repository=repository,
+        usuario_service=usuario_service,
+        vendedor_repository=vendedor_repository,
+    )
 
 
 async def get_current_user(

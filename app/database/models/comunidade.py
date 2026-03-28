@@ -2,6 +2,7 @@
 
 
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import ForeignKey, Numeric
 from app.database.models.produto import ProdutoModel
@@ -13,6 +14,8 @@ from . import Base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey
 
+if TYPE_CHECKING:
+    from app.database.models.endereco import EnderecoModel
 
 class HorarioFuncionamentoModel(Base):
     __tablename__ = "horarios_funcionamento"
@@ -76,3 +79,4 @@ class ComunidadeModel(Base):
     ativo: Mapped[bool] = mapped_column(nullable=False, default=False)
     
     vendedores: Mapped[list[VendedorModel]] = relationship(back_populates="comunidade")
+    endereco: Mapped["EnderecoModel"] = relationship(back_populates="comunidade", uselist=False)
