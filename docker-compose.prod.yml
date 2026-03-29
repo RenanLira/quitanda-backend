@@ -213,9 +213,6 @@ services:
     mem_limit: 448m
     cpus: 0.45
     
-    # Usar secrets do Docker Swarm
-    secrets:
-      - postgres_password
     
     # Política de logging
     logging:
