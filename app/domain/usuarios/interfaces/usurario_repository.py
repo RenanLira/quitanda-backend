@@ -13,6 +13,10 @@ class UsuarioRepository(ABC):
     @abstractmethod
     async def save(self, usuario: Usuario) -> None:
         pass
+
+    @abstractmethod
+    async def update(self, usuario: Usuario) -> None:
+        pass
     
     @abstractmethod
     async def find_by_id(self, id: str) -> Usuario | None:

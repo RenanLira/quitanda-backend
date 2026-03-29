@@ -19,11 +19,12 @@ class UsuarioModel(Base):
 
     id: Mapped[str] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(nullable=False)
-    email: Mapped[str] = mapped_column(nullable=True, unique=True, index=True)
+    email: Mapped[str | None] = mapped_column(nullable=True, unique=True, index=True)
     password_hash: Mapped[str] = mapped_column(nullable=False)
-    telefone: Mapped[str] = mapped_column(nullable=False, index=True)
+    telefone: Mapped[str] = mapped_column(nullable=False, unique=True, index=True)
     tipo: Mapped[ETipoUsuario] = mapped_column(nullable=False, default=ETipoUsuario.CLIENTE)
     ativo: Mapped[bool] = mapped_column(nullable=False, default=True)
+    cadastro_completo: Mapped[bool] = mapped_column(nullable=False, default=True)
     
     tokens: Mapped[list["TokenModel"]] = relationship(back_populates="usuario")
     endereco: Mapped["EnderecoModel"] = relationship(back_populates="usuario", uselist=False)

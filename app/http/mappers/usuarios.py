@@ -10,4 +10,5 @@ def map_usuario_publico(usuario: Usuario) -> UsuarioPublicResponse:
         telefone=usuario.telefone,
         tipo=usuario.tipo.value,
         ativo=usuario.ativo,
+        cadastro_completo=usuario.cadastro_completo,
     )

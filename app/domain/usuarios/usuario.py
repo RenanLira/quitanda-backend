@@ -17,6 +17,7 @@ class Usuario(BaseModel):
     telefone: str
     tipo: ETipoUsuario
     ativo: bool = Field(default=True)
+    cadastro_completo: bool = Field(default=True)
 
 
 

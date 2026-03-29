@@ -16,6 +16,16 @@ class UsuarioRepositoryImpl(UsuarioRepository):
         
         self.session.add(UsuarioModel(**usuario.model_dump()))
         await self.session.commit()
+
+    async def update(self, usuario: Usuario) -> None:
+        usuario_model = await self.session.get(UsuarioModel, usuario.id)
+        if not usuario_model:
+            return
+
+        for key, value in usuario.model_dump().items():
+            setattr(usuario_model, key, value)
+
+        await self.session.commit()
     
     async def find_by_id(self, id: str) -> Usuario | None:
         
@@ -39,12 +49,17 @@ class UsuarioRepositoryImpl(UsuarioRepository):
         return Usuario.model_validate(usuario, from_attributes=True)
     
     async def usuario_existe(self, email: str | None, telefone: str) -> EmailOrTelefoneAlreadyExistsResponse:
-        query = await self.session.execute(
-            select(UsuarioModel).where(
-                (UsuarioModel.email == email) | (UsuarioModel.telefone == telefone)
+        if email:
+            query = await self.session.execute(
+                select(UsuarioModel).where(
+                    (UsuarioModel.email == email) | (UsuarioModel.telefone == telefone)
+                )
             )
-        )
-        
+        else:
+            query = await self.session.execute(
+                select(UsuarioModel).where(UsuarioModel.telefone == telefone)
+            )
+
         result = query.scalars().first()
         return EmailOrTelefoneAlreadyExistsResponse(
             email_exists=bool(result and result.email == email),

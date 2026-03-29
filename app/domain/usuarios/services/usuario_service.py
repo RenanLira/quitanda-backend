@@ -1,6 +1,7 @@
 import bcrypt
 from fastapi.exceptions import RequestValidationError
 from uuid import uuid7
+from app.domain.error import DomainError
 
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
 from app.domain.usuarios.usuario import ETipoUsuario, Usuario
@@ -32,7 +33,9 @@ class UsuarioService:
 
 
     async def criar_usuario(self, dto: CriarUsuarioDTO) -> Usuario:
-        existing_user = await self.usuario_repository.usuario_existe(dto.get("email"), dto["telefone"])
+        nome = self._normalizar_nome(dto["nome"])
+        telefone = self._normalizar_telefone(dto["telefone"])
+        existing_user = await self.usuario_repository.usuario_existe(dto.get("email"), telefone)
 
         if existing_user.telefone_exists:
             raise RequestValidationError(errors=[{
@@ -51,17 +54,69 @@ class UsuarioService:
         hash_password = bcrypt.hashpw(dto["password"].encode("utf-8"), bcrypt.gensalt())
         usuario = Usuario(
             id=str(uuid7()),
-            nome=dto["nome"],
+            nome=nome,
             email=dto.get("email"),
             password_hash=hash_password.decode("utf-8"),
-            telefone=dto["telefone"],
+            telefone=telefone,
             tipo=ETipoUsuario.CLIENTE,
             ativo=True,
+            cadastro_completo=True,
         )
 
         await self.usuario_repository.save(usuario)
         
         return usuario
+
+    async def obter_ou_criar_cadastro_simplificado(self, nome: str, telefone: str) -> Usuario:
+        nome_normalizado = self._normalizar_nome(nome)
+        telefone_normalizado = self._normalizar_telefone(telefone)
+
+        usuario = await self.usuario_repository.find_by("telefone", telefone_normalizado)
+        if usuario:
+            if usuario.tipo != ETipoUsuario.CLIENTE:
+                raise DomainError("Telefone vinculado a um usuario que nao e cliente", code=400)
+            if not usuario.ativo:
+                raise DomainError("Usuario inativo nao pode criar pedidos", code=400)
+
+            if not usuario.cadastro_completo and usuario.nome != nome_normalizado:
+                usuario.nome = nome_normalizado
+                await self.usuario_repository.update(usuario)
+
+            return usuario
+
+        senha_temporaria = bcrypt.hashpw(str(uuid7()).encode("utf-8"), bcrypt.gensalt())
+        novo_usuario = Usuario(
+            id=str(uuid7()),
+            nome=nome_normalizado,
+            email=None,
+            password_hash=senha_temporaria.decode("utf-8"),
+            telefone=telefone_normalizado,
+            tipo=ETipoUsuario.CLIENTE,
+            ativo=True,
+            cadastro_completo=False,
+        )
+        await self.usuario_repository.save(novo_usuario)
+        return novo_usuario
+
+    def _normalizar_nome(self, nome: str) -> str:
+        nome_normalizado = nome.strip()
+        if not nome_normalizado:
+            raise RequestValidationError(errors=[{
+                "loc": ["body", "nome"],
+                "msg": "Nome e obrigatorio",
+                "type": "value_error",
+            }])
+        return nome_normalizado
+
+    def _normalizar_telefone(self, telefone: str) -> str:
+        telefone_normalizado = "".join(char for char in telefone if char.isdigit())
+        if not telefone_normalizado:
+            raise RequestValidationError(errors=[{
+                "loc": ["body", "telefone"],
+                "msg": "Telefone invalido",
+                "type": "value_error",
+            }])
+        return telefone_normalizado
 
     def _validar_transicao_tipo(self, tipo_atual: ETipoUsuario, novo_tipo: ETipoUsuario) -> None:
         match (tipo_atual, novo_tipo):

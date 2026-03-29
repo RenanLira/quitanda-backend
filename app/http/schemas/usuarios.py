@@ -8,3 +8,4 @@ class UsuarioPublicResponse(BaseModel):
     telefone: str
     tipo: str
     ativo: bool
+    cadastro_completo: bool
