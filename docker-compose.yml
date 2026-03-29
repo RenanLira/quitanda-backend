@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: quitanda-backend:dev
     container_name: quitanda_api
     restart: unless-stopped
 
