@@ -5,14 +5,21 @@ from typing import Any
 
 import bcrypt
 import jwt
-from app.domain.auth.auth_errors import CredenciaisInvalidasError, InvalidTokenError
+from fastapi.exceptions import RequestValidationError
+from app.domain.auth.auth_errors import (
+    CadastroIncompletoError,
+    CredenciaisInvalidasError,
+    InvalidTokenError,
+)
+from app.domain.auth.dto.completar_cadastro_simplificado_dto import CompletarCadastroSimplificadoDTO
 from app.domain.auth.dto.token import TokenResponse
 from app.domain.auth.enums.token_type import TokenType
 from app.domain.auth.interfaces.token_repository import TokenRepository
+from app.domain.error import DomainError
 from app.domain.usuarios.dto.criar_usuario import CriarUsuarioDTO
 from app.domain.usuarios.interfaces.usurario_repository import UsuarioRepository
+from app.domain.usuarios.usuario import ETipoUsuario, Usuario
 from app.domain.usuarios.services.usuario_service import UsuarioService
-from app.domain.usuarios.usuario import Usuario
 from app.settings import Settings
 
 
@@ -42,10 +49,14 @@ class AuthService:
         return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
     
     async def login(self, telefone: str, password: str) -> TokenResponse:
-        usuario = await self.usuario_repository.find_by("telefone", telefone)
+        telefone_normalizado = self._normalizar_telefone(telefone)
+        usuario = await self.usuario_repository.find_by("telefone", telefone_normalizado)
         
         if not usuario:
             raise CredenciaisInvalidasError()
+
+        if not usuario.cadastro_completo:
+            raise CadastroIncompletoError()
         
         if not self.verify_password(password, usuario.password_hash):
             raise CredenciaisInvalidasError()
@@ -54,6 +65,46 @@ class AuthService:
         refresh_token = await self._create_refresh_token(usuario)
         
         return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+
+    async def completar_cadastro_simplificado(self, dto: CompletarCadastroSimplificadoDTO) -> Usuario:
+        telefone = self._normalizar_telefone(dto["telefone"])
+        nome = dto["nome"].strip()
+        if not nome:
+            raise RequestValidationError(errors=[{
+                "loc": ["body", "nome"],
+                "msg": "Nome e obrigatorio",
+                "type": "value_error",
+            }])
+
+        email = dto["email"].strip().lower()
+        usuario = await self.usuario_repository.find_by("telefone", telefone)
+        if not usuario:
+            raise DomainError("Cadastro simplificado nao encontrado para este telefone", code=404)
+
+        if usuario.tipo != ETipoUsuario.CLIENTE:
+            raise DomainError("Telefone vinculado a um usuario que nao e cliente", code=400)
+
+        if usuario.cadastro_completo:
+            raise DomainError("Cadastro ja esta completo para este telefone", code=400)
+
+        existing_user = await self.usuario_repository.usuario_existe(email, telefone)
+        if existing_user.email_exists and usuario.email != email:
+            raise RequestValidationError(errors=[{
+                "loc": ["body", "email"],
+                "msg": "Email ja cadastrado",
+                "type": "value_error",
+            }])
+
+        usuario.nome = nome
+        usuario.email = email
+        usuario.password_hash = bcrypt.hashpw(
+            dto["password"].encode("utf-8"),
+            bcrypt.gensalt(),
+        ).decode("utf-8")
+        usuario.cadastro_completo = True
+
+        await self.usuario_repository.update(usuario)
+        return usuario
     
     async def logout(self, refresh_token: str, access_token: str):
         await self.token_repository.delete_token(refresh_token)
@@ -133,4 +184,10 @@ class AuthService:
         
         except jwt.PyJWTError:
             raise InvalidTokenError()
+
+    def _normalizar_telefone(self, telefone: str) -> str:
+        telefone_normalizado = "".join(char for char in telefone if char.isdigit())
+        if not telefone_normalizado:
+            raise CredenciaisInvalidasError()
+        return telefone_normalizado
         
