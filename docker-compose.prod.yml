@@ -1,4 +1,54 @@
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: quitanda-backend:prod
+    container_name: quitanda_api_prod
+    restart: always
+
+    env_file:
+      - .env
+
+    environment:
+      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+      POSTGRES_PORT: 5432
+
+    expose:
+      - "8000"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=2)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+    mem_limit: 320m
+    cpus: 0.45
+
+    deploy:
+      resources:
+        limits:
+          cpus: '0.45'
+          memory: 320M
+        reservations:
+          cpus: '0.20'
+          memory: 160M
+
+    networks:
+      - backend_network
+
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
   postgres:
     image: postgres:16-alpine
     container_name: postgres_prod
@@ -38,11 +88,14 @@ services:
     deploy:
       resources:
         limits:
-          cpus: '4'
-          memory: 4G
+          cpus: '0.45'
+          memory: 512M
         reservations:
-          cpus: '2'
-          memory: 2G
+          cpus: '0.20'
+          memory: 256M
+
+    mem_limit: 512m
+    cpus: 0.45
     
     # Usar secrets do Docker Swarm
     secrets:
@@ -81,6 +134,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+
+    mem_limit: 128m
+    cpus: 0.10
 
 volumes:
   postgres_data:
