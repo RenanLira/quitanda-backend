@@ -38,15 +38,18 @@ Workflow criado em `.github/workflows/ci-cd.yml`.
 ### Fluxo
 
 1. CI em pull request para `main`:
- - instala dependencias com `uv`
- - valida sintaxe Python
- - valida os dois arquivos compose
- - builda a imagem Docker
-2. CD em push para `main`:
- - builda e publica imagem em `ghcr.io/<owner>/quitanda-backend`
- - conecta no servidor via SSH
- - faz `git pull` no diretorio de deploy
- - faz pull da nova imagem e sobe stack com `docker compose -f docker-compose.prod.yml up -d`
+
+   - instala dependencias com `uv`
+   - valida sintaxe Python
+   - valida os dois arquivos compose
+   - builda a imagem Docker
+
+1. CD em push para `main`:
+
+   - builda e publica imagem em `ghcr.io/<owner>/quitanda-backend`
+   - conecta no servidor via SSH
+   - faz `git pull` no diretorio de deploy
+   - faz pull da nova imagem e sobe stack com `docker compose -f docker-compose.prod.yml up -d`
 
 ### Secrets obrigatorios no repositorio
 
@@ -73,3 +76,25 @@ O workflow injeta automaticamente:
 - `IMAGE_TAG=<commit_sha>`
 
 Essas variaveis sao usadas em `docker-compose.prod.yml` para versionar o deploy por commit, sem build local no servidor.
+
+## HTTPS automatico em producao (Nginx + Let's Encrypt)
+
+O compose de producao inclui:
+
+- `nginx` como reverse proxy (portas 80 e 443)
+- `certbot` para emissao e renovacao automatica de certificados
+
+### Variaveis necessarias no `.env` de producao
+
+- `DOMAIN_NAME`: dominio publico apontando para o servidor (ex: `api.seudominio.com`)
+- `LETSENCRYPT_EMAIL`: email para registro no Let's Encrypt
+- `NGINX_HTTP_PORT` (opcional, default `80`)
+- `NGINX_HTTPS_PORT` (opcional, default `443`)
+
+### Como funciona
+
+1. `cert_init` cria um certificado temporario local para o Nginx subir sem erro.
+2. `certbot` solicita certificado valido do Let's Encrypt via desafio HTTP (`/.well-known/acme-challenge/`).
+3. Nginx recarrega periodicamente e passa a servir o certificado valido quando disponivel.
+
+Para o certificado ser emitido, o dominio precisa apontar para o IP do servidor e a porta 80 precisa estar aberta.
