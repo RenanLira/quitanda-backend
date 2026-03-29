@@ -5,6 +5,7 @@ from uuid import uuid7
 from app.domain.auth.auth_errors import UsuarioSemPermissaoError
 from app.domain.error import DomainError
 from app.domain.pedidos.dto.criar_pedido_dto import CriarPedidosDTO
+from app.domain.pedidos.dto.criar_pedido_publico_dto import CriarPedidoPublicoDTO
 from app.domain.pedidos.interfaces.pedido_repository import PedidoRepository
 from app.domain.pedidos.pedido import Pedido, PedidoItem, StatusPedido
 from app.domain.pedidos.pedido_errors import (
@@ -121,6 +122,14 @@ class PedidoService:
         # TODO: atacado - redistribuicao inteligente por estoque entre vendedores da comunidade.
         await self.repository.save_many(pedidos)
         return pedidos
+
+    async def criar_pedidos_publico(self, dto: CriarPedidoPublicoDTO) -> list[Pedido]:
+        cliente = await self.usuario_service.obter_ou_criar_cadastro_simplificado(
+            nome=dto["nome"],
+            telefone=dto["telefone"],
+        )
+        payload: CriarPedidosDTO = {"itens": dto["itens"]}
+        return await self.criar_pedidos(cliente.id, payload)
 
     async def listar_pedidos_cliente(self, cliente_id: str) -> list[Pedido]:
         return await self.repository.find_by_cliente_id(cliente_id)

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends
 from app.dependencies import get_current_user, get_pedido_service
 from app.domain.auth.decorators.authorization import require_roles
 from app.domain.pedidos.dto.criar_pedido_dto import CriarPedidosDTO
+from app.domain.pedidos.dto.criar_pedido_publico_dto import CriarPedidoPublicoDTO
 from app.domain.pedidos.dto.recusar_pedido_dto import RecusarPedidoDTO
 from app.domain.pedidos.pedido_service import PedidoService
 from app.domain.usuarios.usuario import ETipoUsuario, Usuario
@@ -25,6 +26,14 @@ class PedidosRouter(APIRouter):
             pedido_service: Annotated[PedidoService, Depends(get_pedido_service)],
         ):
             pedidos = await pedido_service.criar_pedidos(current_user.id, body)
+            return [map_pedido(pedido).model_dump(mode="json") for pedido in pedidos]
+
+        @self.post("/publico", description="Cria pedidos sem login com cadastro simplificado")
+        async def criar_pedidos_publico(
+            body: Annotated[CriarPedidoPublicoDTO, Body()],
+            pedido_service: Annotated[PedidoService, Depends(get_pedido_service)],
+        ):
+            pedidos = await pedido_service.criar_pedidos_publico(body)
             return [map_pedido(pedido).model_dump(mode="json") for pedido in pedidos]
 
         @self.get("/me", description="Lista pedidos do cliente autenticado")
