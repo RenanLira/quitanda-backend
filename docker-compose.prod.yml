@@ -126,10 +126,6 @@ services:
     env_file:
       - .env
 
-    environment:
-      DATABASE_URL: "postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
-      POSTGRES_PORT: 5432
-
     expose:
       - "8000"
 
@@ -266,7 +262,3 @@ networks:
     driver: bridge
     internal: true  # Rede interna, sem acesso externo direto
 
-# Secrets para produção (Docker Swarm)
-secrets:
-  postgres_password:
-    external: true
