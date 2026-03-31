@@ -77,24 +77,10 @@ O workflow injeta automaticamente:
 
 Essas variaveis sao usadas em `docker-compose.prod.yml` para versionar o deploy por commit, sem build local no servidor.
 
-## HTTPS automatico em producao (Nginx + Let's Encrypt)
+## HTTP em producao (Nginx)
 
-O compose de producao inclui:
+O compose de producao usa `nginx` como reverse proxy apenas na porta `80` (HTTP).
 
-- `nginx` como reverse proxy (portas 80 e 443)
-- `certbot` para emissao e renovacao automatica de certificados
+### Variaveis opcionais no `.env` de producao
 
-### Variaveis necessarias no `.env` de producao
-
-- `DOMAIN_NAME`: dominio publico apontando para o servidor (ex: `api.seudominio.com`)
-- `LETSENCRYPT_EMAIL`: email para registro no Let's Encrypt
 - `NGINX_HTTP_PORT` (opcional, default `80`)
-- `NGINX_HTTPS_PORT` (opcional, default `443`)
-
-### Como funciona
-
-1. `cert_init` cria um certificado temporario local para o Nginx subir sem erro.
-2. `certbot` solicita certificado valido do Let's Encrypt via desafio HTTP (`/.well-known/acme-challenge/`).
-3. Nginx recarrega periodicamente e passa a servir o certificado valido quando disponivel.
-
-Para o certificado ser emitido, o dominio precisa apontar para o IP do servidor e a porta 80 precisa estar aberta.
